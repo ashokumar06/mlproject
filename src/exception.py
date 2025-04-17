@@ -11,8 +11,8 @@ def error_message_detail(error, error_detail:sys):
 class CustomException(Exception):
     def __init__(self,error_message,error_detels:sys):
         self.error_message = error_message_detail(error_message,error_detels=error_detels)
-        # self.error_message = f"Error occurred in script name [{filename}] line number [ {line_number} ] error message [{str(error)}]"
         super().__init__(self.error_message)
 
     def __str__(self):
+        
         return self.error_message    
