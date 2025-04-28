@@ -47,7 +47,43 @@ class ModelTrainer:
                 "CatBoostRegressor": CatBoostRegressor(silent=True)
             }
 
-            model_report: dict = evaluate_models(X_train, y_train, X_test, y_test, models)
+            params = {
+                "RandomForestRegressor": {
+                    "n_estimators": [50, 100, 200],
+                    "max_depth": [None, 10, 20],
+                    "min_samples_split": [2, 5, 10]
+                },
+                "GradientBoostingRegressor": {
+                    "n_estimators": [50, 100, 200],
+                    "learning_rate": [0.01, 0.1, 0.2],
+                    "max_depth": [3, 5, 7]
+                },
+                "AdaBoostRegressor": {
+                    "n_estimators": [50, 100, 200],
+                    "learning_rate": [0.1, 0.5, 1.0]
+                },
+                "KNeighborsRegressor": {
+                    "n_neighbors": [3, 5, 7],
+                    "weights": ['uniform', 'distance']
+                },
+                "DecisionTreeRegressor": {
+                    "max_depth": [None, 10, 20],
+                    "min_samples_split": [2, 5, 10]
+                },
+                "XGBRegressor": {
+                    "n_estimators": [50, 100, 200],
+                    "learning_rate": [0.01, 0.1, 0.2],
+                    "max_depth": [3, 5, 7]
+                },
+                "CatBoostRegressor": {
+                    "iterations": [50, 100, 200],
+                    "learning_rate": [0.01, 0.1, 0.2],
+                    "depth": [4, 6, 8]
+                }
+            }
+            
+            
+            model_report: dict = evaluate_models(X_train, y_train, X_test, y_test, models, params)
             logging.info("Model training completed")
             
             # save the best model
