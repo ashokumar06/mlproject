@@ -13,9 +13,9 @@ from src.pipeline.predict_pipeline import PredictPipeline , CustomData
 
 # from src.pipeline.train_pipeline import TrainPipeline
 
-app = Flask(__name__)
-application = app
-application.secret_key = 'asdfghjnkml'
+application = Flask(__name__)
+app = application 
+app.secret_key = 'asdfghjnkml'
 
 @app.route('/', methods=['GET'])
 def index():
