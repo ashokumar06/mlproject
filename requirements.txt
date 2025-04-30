@@ -6,4 +6,5 @@ scikit-learn
 xgboost
 catboost
 dill
+flask
 - e.

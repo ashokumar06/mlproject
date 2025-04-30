@@ -1,5 +1,8 @@
 import os 
 import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 import numpy as np
 import pandas as pd
 from src.exception import CustomException
@@ -69,5 +72,12 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, params):
             logging.info(f"{model_name} - R2 Score: {model_report[model_name]['R2 Score']}")
             
         return model_report
+    except Exception as e:
+        raise CustomException(e, sys)
+    
+def load_object(file_path):
+    try:
+        with open(file_path, 'rb') as file_obj:
+            return dill.load(file_obj)
     except Exception as e:
         raise CustomException(e, sys)
