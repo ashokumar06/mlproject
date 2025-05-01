@@ -13,8 +13,7 @@ from src.pipeline.predict_pipeline import PredictPipeline , CustomData
 
 # from src.pipeline.train_pipeline import TrainPipeline
 
-application = Flask(__name__)
-app = application 
+app = Flask(__name__)
 app.secret_key = 'asdfghjnkml'
 
 @app.route('/', methods=['GET'])
