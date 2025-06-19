@@ -16,6 +16,13 @@ from src.pipeline.predict_pipeline import PredictPipeline , CustomData
 app = Flask(__name__)
 app.secret_key = 'asdfghjnkml'
 
+@app.route('/health')
+def health_check():
+    return jsonify({
+        'status': 'healthy',
+        'message': 'Service is running'
+    }), 200
+
 @app.route('/', methods=['GET'])
 def index():
     try:
