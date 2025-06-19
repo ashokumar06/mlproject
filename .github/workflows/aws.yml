@@ -139,7 +139,7 @@ jobs:
       - name: Run new Docker container
         run: |
           docker run -d \
-            -p 8080:8080 \
+            -p 8080:5000 \
             --ipc="host" \
             --name=mltest \
             --restart=unless-stopped \
