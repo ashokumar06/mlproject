@@ -1,15 +1,20 @@
-name: workflow
-
+name: CI/CD Pipeline
 on:
   push:
     branches:
       - main
     paths-ignore:
       - 'README.md'
+      - '*.md'
+      - 'docs/**'
 
 permissions:
   id-token: write
   contents: read
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
 
 jobs:
   integration:
@@ -17,105 +22,146 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Lint code
         run: echo "Linting repository"
+        # TODO: Add actual linting commands
+        # Example: npm run lint or flake8 . or golangci-lint run
 
       - name: Run unit tests
         run: echo "Running unit tests"
+        # TODO: Add actual test commands
+        # Example: npm test or pytest or go test ./...
 
-  build-and-push-ecr-image:
-    name: Continuous Delivery
+  build-and-push:
+    name: Build and Push to ECR
     needs: integration
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.build-image.outputs.image }}
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Install Utilities
+      - name: Free up disk space
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq unzip
+          # Remove unnecessary packages and files
+          sudo apt-get clean
+          sudo apt-get autoremove -y
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          # Show available disk space
+          df -h
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      # - name: Login to Amazon ECR
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Pull latest image
-        run: |
-          docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
-
-      - name: Run Docker Image to serve users
-        run: |
-          docker run -d -p 8080:8080 --ipc="host" \
-            --name=mltest \
-            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-            -e AWS_REGION=${{ secrets.AWS_REGION }} \
-            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
-            
-      - name: Clean Docker resources
-        run: |
-          docker system prune -af
-          docker volume prune -f
-
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Build a docker container and
-          # push it to ECR so that it can
-          # be deployed to ECS.
+          # Clean up Docker to free space before building
+          docker system prune -af
+          docker volume prune -f
+          
+          # Build Docker image with single tag first
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          
+          # Push the versioned tag
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           
+          # Tag as latest and push (reuses layers, saves space)
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           
-  Continuous-Deployment:
-    needs: build-and-push-ecr-image
+          # Clean up local images to free space
+          docker rmi $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG || true
+          docker rmi $ECR_REGISTRY/$ECR_REPOSITORY:latest || true
+          
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Continuous Deployment
+    needs: build-and-push
     runs-on: self-hosted
+    environment: production
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Free up disk space on self-hosted runner
+        run: |
+          # Clean Docker resources first
+          docker system prune -af
+          docker volume prune -f
+          # Show available disk space
+          df -h
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      
-      
-      - name: Pull latest images
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Pull latest image
         run: |
-         docker pull ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
-         
-      - name: Stop and remove  container if running
+          docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Stop and remove existing container
         run: |
-         docker ps -q --filter "name=mltest" | grep -q . && docker stop mltest && docker rm -fv mltest
-       
-      - name: Run Docker Image to serve users
+          if docker ps -q --filter "name=mltest" | grep -q .; then
+            echo "Stopping existing container..."
+            docker stop mltest
+            docker rm -f mltest
+          else
+            echo "No existing container found"
+          fi
+
+      - name: Run new Docker container
         run: |
-         docker run -d -p 8080:8080 --ipc="host" --name=mltest -e 'AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}' -e 'AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}' -e 'AWS_REGION=${{ secrets.AWS_REGION }}'  ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
-      - name: Clean previous images and containers
+          docker run -d \
+            -p 8080:8080 \
+            --ipc="host" \
+            --name=mltest \
+            --restart=unless-stopped \
+            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_REGION=${{ env.AWS_REGION }} \
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Verify deployment
         run: |
-         docker system prune -f
+          sleep 10
+          if curl -f http://localhost:8080/health 2>/dev/null; then
+            echo "✅ Deployment successful - service is responding"
+          else
+            echo "❌ Deployment may have failed - service not responding"
+            docker logs mltest --tail 50
+            exit 1
+          fi
+
+      - name: Clean up Docker resources
+        if: always()
+        run: |
+          # Remove dangling images and unused containers
+          docker image prune -f
+          docker container prune -f
