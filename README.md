@@ -98,7 +98,7 @@ $ docker run -p 5000:5000 mlproject:latest
 
 You can now open [http://localhost:5000](http://localhost:5000) to access the web form, or hit the API programmatically (see below).
 
-### AWS Hosting (Planned)
+### AWS Hosting
 
 Deployment via **EC2 + ECR + GitHub Actions self-hosted runner** is planned for future production testing.
 
