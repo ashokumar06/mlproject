@@ -14,6 +14,7 @@
 
    * [Run locally](#run-locally)
    * [Run with Docker](#run-with-docker)
+   * [AWS Hosting (Planned)](#aws-hosting-planned)
 4. [API Reference](#api-reference)
 5. [Re‑train the Model](#re-train-the-model)
 6. [Testing](#testing)
@@ -71,7 +72,7 @@ mlproject/
 
 ```bash
 # 1. Clone
-$ git clone https://github.com/<your‑user>/mlproject.git
+$ git clone https://github.com/ashokumar06/mlproject.git
 $ cd mlproject
 
 # 2. (Recommended) create a virtual environment
@@ -96,6 +97,12 @@ $ docker run -p 5000:5000 mlproject:latest
 ```
 
 You can now open [http://localhost:5000](http://localhost:5000) to access the web form, or hit the API programmatically (see below).
+
+### AWS Hosting (Planned)
+
+Deployment via **EC2 + ECR + GitHub Actions self-hosted runner** is planned for future production testing.
+
+Stay tuned for instructions or watch the repo for updates.
 
 ---
 
