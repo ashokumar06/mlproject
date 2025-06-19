@@ -1,11 +1,23 @@
-numpy
-pandas
-matplotlib
-seaborn
-scikit-learn==1.6.1
-xgboost
-catboost
-dill
-flask
+# Core numerical computing
+numpy==1.24.4
+pandas==2.0.3
 
-#- e.
+# Visualization (lighter alternatives)
+matplotlib==3.7.2
+seaborn==0.12.2
+
+# Machine Learning
+scikit-learn==1.3.0  # Updated from 1.6.1 (more stable, smaller)
+xgboost==1.7.6
+catboost==1.2.2
+
+# Serialization
+dill==0.3.7
+
+flask==2.3.3
+gunicorn==21.2.0  # Added for production deployment
+
+# scipy==1.11.4  # Only uncomment if you actually use scipy
+
+
+joblib==1.3.2  # For sklearn parallel processing
