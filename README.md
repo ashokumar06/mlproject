@@ -1,4 +1,4 @@
-# mlproject
+# StudentPerformanceMajor
 
 📌 **Learn by building, testing, and improving real ML workflows**
 
@@ -72,8 +72,8 @@ mlproject/
 
 ```bash
 # 1. Clone
-$ git clone https://github.com/ashokumar06/mlproject.git
-$ cd mlproject
+$ git clone [StudentPerformanceMajor](https://github.com/ashokumar06/StudentPerformanceMajor.git)
+$ cd StudentPerformanceMajor
 
 # 2. (Recommended) create a virtual environment
 $ python -m venv .venv && source .venv/bin/activate
@@ -181,7 +181,7 @@ Please follow the [Conventional Commits](https://www.conventionalcommits.org/) s
 
 ## License
 
-`mlproject` is licensed under the **GNU General Public License v3.0 or later**.  See the full text in [`LICENSE`](./LICENSE).
+`StudentPerformanceMajor` is licensed under the **GNU General Public License v3.0 or later**.  See the full text in [`LICENSE`](./LICENSE).
 
 > You are free to use, study, share, and improve this software―just keep it open.
 
