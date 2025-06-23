@@ -14,7 +14,7 @@
 
    * [Run locally](#run-locally)
    * [Run with Docker](#run-with-docker)
-   * [AWS Hosting (Planned)](#aws-hosting-planned)
+   * [AWS Hosting](#aws-hosting)
 4. [API Reference](#api-reference)
 5. [Re‑train the Model](#re-train-the-model)
 6. [Testing](#testing)
