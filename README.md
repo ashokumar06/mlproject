@@ -100,7 +100,7 @@ You can now open [http://localhost:5000](http://localhost:5000) to access the we
 
 ### AWS Hosting
 
-Deployment via **EC2 + ECR + GitHub Actions self-hosted runner** is planned for future production testing.
+Deployment via **EC2 + ECR + GitHub Actions self-hosted runner** is for testing.
 
 Stay tuned for instructions or watch the repo for updates.
 
